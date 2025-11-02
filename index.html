@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Поиск YouTube каналов</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔍 Поиск YouTube каналов</h1>
+            <p class="subtitle">Найдите интересующие вас каналы на YouTube</p>
+        </header>
+
+        <div class="controls">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Введите название канала или тему...">
+            </div>
+            <div class="filter-box">
+                <select id="categoryFilter">
+                    <option value="">Все категории</option>
+                    <option value="education">Образование</option>
+                    <option value="entertainment">Развлечения</option>
+                    <option value="music">Музыка</option>
+                    <option value="sports">Спорт</option>
+                    <option value="gaming">Игры</option>
+                    <option value="technology">Технологии</option>
+                    <option value="cooking">Кулинария</option>
+                    <option value="travel">Путешествия</option>
+                </select>
+            </div>
+            <div class="filter-box">
+                <select id="sortFilter">
+                    <option value="relevance">По релевантности</option>
+                    <option value="date">По дате</option>
+                    <option value="rating">По рейтингу</option>
+                    <option value="viewCount">По просмотрам</option>
+                </select>
+            </div>
+            <button id="searchButton">Найти каналы</button>
+            <button id="clearFilters">Сбросить</button>
+        </div>
+
+        <div class="stats">
+            <div id="resultsCount">Найдено каналов: 0</div>
+            <div id="searchInfo"></div>
+        </div>
+
+        <div id="loading" class="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p>Ищем каналы...</p>
+        </div>
+
+        <div id="error" class="error" style="display: none;">
+            Ошибка загрузки данных. Пожалуйста, попробуйте позже.
+        </div>
+
+        <div id="channelsContainer" class="channels-grid">
+            <!-- Каналы будут загружены здесь -->
+        </div>
+
+        <div id="emptyState" class="empty-state" style="display: none;">
+            <div class="empty-icon">📺</div>
+            <h3>Каналы не найдены</h3>
+            <p>Попробуйте изменить параметры поиска</p>
+        </div>
+
+        <div id="loadMoreContainer" style="display: none; text-align: center; margin-top: 30px;">
+            <button id="loadMoreButton" class="load-more-btn">Загрузить еще</button>
+        </div>
+    </div>
+
+    <!-- Модальное окно с детальной информацией о канале -->
+    <div id="channelModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Информация о канале</h2>
+                <button class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Детали канала будут загружены здесь -->
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
