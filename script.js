@@ -6,6 +6,7 @@ const YOUTUBE_API_URL = 'https://www.googleapis.com/youtube/v3';
 let currentSearchTerm = '';
 let nextPageToken = '';
 let isLoading = false;
+let currentChannels = [];
 
 // DOM элементы
 const channelsContainer = document.getElementById('channelsContainer');
@@ -58,13 +59,19 @@ function performSearch() {
     
     currentSearchTerm = searchTerm;
     nextPageToken = '';
+    currentChannels = [];
     searchChannels(searchTerm);
 }
 
 // Реальный поиск каналов через YouTube API
 async function searchChannels(query, pageToken = '') {
     try {
-        showLoading();
+        if (!pageToken) {
+            showLoading();
+        } else {
+            loadMoreButton.textContent = 'Загрузка...';
+            loadMoreButton.disabled = true;
+        }
         
         const params = new URLSearchParams({
             part: 'snippet',
@@ -83,6 +90,8 @@ async function searchChannels(query, pageToken = '') {
             params.append('order', sort);
         }
         
+        console.log('Searching with params:', params.toString());
+        
         const response = await fetch(`${YOUTUBE_API_URL}/search?${params}`);
         
         if (!response.ok) {
@@ -91,27 +100,31 @@ async function searchChannels(query, pageToken = '') {
         }
         
         const data = await response.json();
+        console.log('API Response:', data);
         
         if (!data.items || data.items.length === 0) {
-            displayChannels([]);
-            hideLoading();
-            showError('Каналы не найдены. Попробуйте другой запрос.');
+            if (!pageToken) {
+                displayChannels([]);
+                hideLoading();
+                showError('Каналы не найдены. Попробуйте другой запрос.');
+            }
             return;
         }
         
         // Получаем детальную информацию о каналах
         const channelDetails = await getChannelDetails(data.items.map(item => item.snippet.channelId));
         
-        hideLoading();
-        
-        if (pageToken) {
-            appendChannels(channelDetails);
-        } else {
+        if (!pageToken) {
+            hideLoading();
+            currentChannels = channelDetails;
             displayChannels(channelDetails);
+        } else {
+            currentChannels = [...currentChannels, ...channelDetails];
+            appendChannels(channelDetails);
         }
         
         nextPageToken = data.nextPageToken || '';
-        updateStats(channelDetails.length, query);
+        updateStats(currentChannels.length, query);
         
         // Показываем/скрываем кнопку "Загрузить еще"
         if (nextPageToken) {
@@ -124,6 +137,9 @@ async function searchChannels(query, pageToken = '') {
         hideLoading();
         showError('Ошибка при поиске каналов: ' + error.message);
         console.error('Search error:', error);
+    } finally {
+        loadMoreButton.disabled = false;
+        loadMoreButton.textContent = 'Загрузить еще';
     }
 }
 
@@ -202,6 +218,7 @@ async function loadPopularChannels() {
         const channelDetails = await getChannelDetails(data.items.map(item => item.snippet.channelId));
         
         hideLoading();
+        currentChannels = channelDetails;
         displayChannels(channelDetails);
         updateStats(channelDetails.length, 'популярные каналы');
         loadMoreContainer.style.display = 'none';
@@ -330,7 +347,7 @@ function openChannelModal(channel) {
             
             <div class="detail-group full-width">
                 <h3>Описание</h3>
-                <p style="white-space: pre-wrap; line-height: 1.4;">${channel.description || 'Описание недоступно'}</p>
+                <p style="white-space: pre-wrap; line-height: 1.4; max-height: 200px; overflow-y: auto;">${channel.description || 'Описание недоступно'}</p>
             </div>
             
             <div class="detail-group full-width">
@@ -356,7 +373,7 @@ function openChannelModal(channel) {
     channelModal.style.display = 'flex';
 }
 
-// Загрузка дополнительных результатов
+// ОБНОВЛЕННАЯ ФУНКЦИЯ: Загрузка дополнительных результатов
 function loadMoreResults() {
     if (isLoading || !nextPageToken) return;
     
@@ -364,13 +381,12 @@ function loadMoreResults() {
     loadMoreButton.disabled = true;
     loadMoreButton.textContent = 'Загрузка...';
     
-    searchChannels(currentSearchTerm, nextPageToken);
-    
-    setTimeout(() => {
+    // Убираем setTimeout и используем Promise
+    searchChannels(currentSearchTerm, nextPageToken).finally(() => {
         isLoading = false;
         loadMoreButton.disabled = false;
         loadMoreButton.textContent = 'Загрузить еще';
-    }, 2000);
+    });
 }
 
 // Сброс фильтров
@@ -378,6 +394,8 @@ function clearFilters() {
     searchInput.value = '';
     categoryFilter.value = '';
     sortFilter.value = 'relevance';
+    nextPageToken = '';
+    currentChannels = [];
     loadPopularChannels();
 }
 
@@ -433,17 +451,4 @@ function showError(message) {
     emptyStateElement.style.display = 'none';
     loadingElement.style.display = 'none';
     loadMoreContainer.style.display = 'none';
-}
-
-// Функция для debounce (если нужно)
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
 }
